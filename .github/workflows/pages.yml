@@ -1,8 +1,7 @@
 name: Deploy D&A Meeting Preview
 on:
   push:
-    branches: [develop]
-  workflow_dispatch:
+    branches: [main]
 permissions:
   contents: read
   pages: write
