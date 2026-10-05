@@ -4,3 +4,5 @@ test('long recording has a ten-hour cap and durable chunks',()=>{const s=readFil
 test('long recording discloses limitations',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/không bảo đảm ghi đủ 10 tiếng/);assert.match(s,/iPhone có thể ngừng ghi/)});
 
 test('Meet capture requires permission and notes are not labeled AI transcript',()=>{const m=readFileSync('src/meet.ts','utf8');const ui=readFileSync('src/main.tsx','utf8');assert.match(m,/getDisplayMedia/);assert.match(m,/getAudioTracks/);assert.match(ui,/chưa phải AI tự nghe/);assert.match(ui,/validMeetLink/)});
+
+test('Meet notes persist and tab capture warns of memory limits',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/da-meet-notes/);assert.match(s,/không dùng để ghi 10 tiếng/);const m=readFileSync('src/meet.ts','utf8');assert.match(m,/recorder.onerror=finish/)});
