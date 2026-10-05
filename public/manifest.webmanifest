@@ -1,0 +1,10 @@
+{
+  "name": "D&A Meeting — HOANGGIA AI",
+  "short_name": "D&A Meeting",
+  "start_url": "/da-meeting/",
+  "scope": "/da-meeting/",
+  "display": "standalone",
+  "background_color": "#0d1422",
+  "theme_color": "#0d1422",
+  "lang": "vi"
+}
