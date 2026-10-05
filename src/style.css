@@ -2,3 +2,5 @@
 .actions{display:flex;gap:8px;margin-top:8px}.actions button{padding:8px 14px}.import{margin:12px 0 18px}.import input{margin-top:8px;font-size:12px}.panel>.secondary{margin-top:12px}
 
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.actions button{min-width:110px}
+
+textarea{width:100%;min-height:130px;background:#0c1627;border:1px solid #41536d;color:#fff;padding:13px;border-radius:10px;font:inherit;resize:vertical}.panel h3{font-size:15px;margin-top:20px}.panel p{overflow-wrap:anywhere}
