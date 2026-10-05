@@ -1,1 +1,4 @@
 import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';test('app discloses unfinished AI functionality',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/chưa khả dụng/)});test('privacy exclusions exist',()=>{const s=readFileSync('.gitignore','utf8');assert.match(s,/recordings\//);assert.match(s,/\.env/)});
+
+test('long recording has a ten-hour cap and durable chunks',()=>{const s=readFileSync('src/recording.ts','utf8');assert.match(s,/MAX_RECORDING_MS=10\*60\*60\*1000/);assert.match(s,/writeChunk\(session,i,chunk\)/);assert.match(s,/storageEstimate/);assert.match(s,/downloadSavedChunks/)});
+test('long recording discloses limitations',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/không bảo đảm ghi đủ 10 tiếng/);assert.match(s,/iPhone có thể ngừng ghi/)});
