@@ -2,3 +2,5 @@ import test from 'node:test';import assert from 'node:assert/strict';import{read
 
 test('long recording has a ten-hour cap and durable chunks',()=>{const s=readFileSync('src/recording.ts','utf8');assert.match(s,/MAX_RECORDING_MS=10\*60\*60\*1000/);assert.match(s,/writeChunk\(session,i,chunk\)/);assert.match(s,/storageEstimate/);assert.match(s,/downloadSavedChunks/)});
 test('long recording discloses limitations',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/không bảo đảm ghi đủ 10 tiếng/);assert.match(s,/iPhone có thể ngừng ghi/)});
+
+test('Meet capture requires permission and notes are not labeled AI transcript',()=>{const m=readFileSync('src/meet.ts','utf8');const ui=readFileSync('src/main.tsx','utf8');assert.match(m,/getDisplayMedia/);assert.match(m,/getAudioTracks/);assert.match(ui,/chưa phải AI tự nghe/);assert.match(ui,/validMeetLink/)});
