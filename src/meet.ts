@@ -10,6 +10,7 @@ export async function captureMeetTab(onChunk:(blob:Blob)=>void,onEnd:()=>void){
  try{recorder=new MediaRecorder(new MediaStream(stream.getAudioTracks()),mime?{mimeType:mime}:undefined)}catch(e){stream.getTracks().forEach(t=>t.stop());throw e}
  let ended=false;const finish=()=>{if(ended)return;ended=true;stream.getTracks().forEach(t=>t.stop());onEnd()};
  recorder.ondataavailable=e=>{if(e.data.size)onChunk(e.data)};
+ recorder.onerror=finish;
  recorder.onstop=finish;
  stream.getTracks().forEach(t=>t.addEventListener('ended',()=>{if(recorder.state!=='inactive')recorder.stop();else finish()}));
  try{recorder.start(10000)}catch(e){stream.getTracks().forEach(t=>t.stop());throw e}
