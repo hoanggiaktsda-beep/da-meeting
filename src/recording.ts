@@ -14,15 +14,16 @@ export async function downloadSavedChunks(session:string){const db=await openAud
 export function supported(){return !!navigator.mediaDevices?.getUserMedia&&typeof MediaRecorder!=='undefined'}
 export async function startRecording(onStop:(blob:Blob)=>void,onError:(message:string)=>void){
  if(!supported())throw Error('Trình duyệt không hỗ trợ ghi âm');
- const stream=await navigator.mediaDevices.getUserMedia({audio:true});
- const types=['audio/mp4','audio/webm;codecs=opus','audio/webm'];
+ const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1}});
+ const types=['audio/webm;codecs=opus','audio/mp4','audio/webm'];
  const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
  let recorder:MediaRecorder;
  try{recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined)}catch(e){stream.getTracks().forEach(t=>t.stop());throw e}
  const session=crypto.randomUUID();localStorage.setItem('da-meeting-last-audio-session',session);
  let index=0;let pending=Promise.resolve();let failed=false;
  recorder.ondataavailable=e=>{if(!e.data.size)return;const chunk=e.data;const i=index++;pending=pending.then(()=>writeChunk(session,i,chunk)).catch(()=>{failed=true;onError('Không lưu được đoạn âm thanh. Kiểm tra dung lượng thiết bị và dừng ghi để bảo vệ dữ liệu.')})};
- recorder.onerror=()=>onError('Ghi âm gặp lỗi. Hãy dừng ghi và kiểm tra các đoạn đã lưu.');
+ recorder.onerror=()=>{onError('Ghi âm gặp lỗi. Hãy dừng ghi và kiểm tra các đoạn đã lưu.');stream.getTracks().forEach(t=>t.stop())};
+ stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{onError('Microphone bị ngắt. Chỉ các đoạn đã lưu có thể khôi phục.');if(recorder.state!=='inactive')recorder.stop()}));
  recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());void pending.then(async()=>{const blob=await recoverRecording(session);if(blob.size)onStop(blob);else onError('Không có dữ liệu ghi âm đã lưu.');if(failed)onError('Một số đoạn ghi âm có thể đã mất.')}).catch(()=>onError('Không đọc được bản ghi đã lưu.'))};
  try{recorder.start(CHUNK_MS)}catch(e){stream.getTracks().forEach(t=>t.stop());throw e}
  return recorder;
