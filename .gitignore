@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.db
+__pycache__/
+.pytest_cache/
+.venv/
+recordings/
+transcripts/
+reports/
