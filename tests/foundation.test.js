@@ -1,0 +1,1 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';test('app has explicit preview disclosure',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/chưa tích hợp ghi âm và AI/)});test('privacy exclusions exist',()=>{const s=readFileSync('.gitignore','utf8');assert.match(s,/recordings\//);assert.match(s,/\.env/)});
