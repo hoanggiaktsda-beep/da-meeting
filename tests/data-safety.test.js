@@ -52,3 +52,36 @@ test('JSON backup includes Meet notes and validates optional Meet fields',()=>{
  assert.match(ui,/parsed.meet!==undefined/);
  assert.match(ui,/KHÔNG chứa âm thanh/);
 });
+
+test('recording releases microphone when session ID cannot be saved',async()=>{
+ let stopped=false;
+ const track={stop(){stopped=true},addEventListener(){}};
+ const stream={getTracks:()=>[track],getAudioTracks:()=>[track]};
+ class Recorder{static isTypeSupported(){return true}constructor(){}}
+ const recording=loadTypeScript('src/recording.ts',{},{
+  navigator:{mediaDevices:{getUserMedia:async()=>stream}},
+  MediaRecorder:Recorder,
+  crypto:{randomUUID:()=> 'session-1'},
+  localStorage:{setItem(){throw new Error('quota')}},
+  Error,Blob,
+ });
+ await assert.rejects(recording.startRecording(()=>{},()=>{}),/Không lưu được mã phiên/);
+ assert.equal(stopped,true);
+});
+test('audio reads are scoped to the requested session and recovery handles denied storage',()=>{
+ const recording=readFileSync('src/recording.ts','utf8');
+ const main=readFileSync('src/main.tsx','utf8');
+ assert.equal((recording.match(/getAll\(range\)/g)||[]).length,2);
+ assert.match(recording,/IDBKeyRange\.bound\(\[session,0\],\[session,Number\.MAX_SAFE_INTEGER\]\)/);
+ assert.match(main,/const session=readLocal\('da-meeting-last-audio-session'\)/);
+});
+test('meeting transaction catches synchronous store failures and aborts',async()=>{
+ let aborted=false,closed=false;
+ const tx={abort(){aborted=true},objectStore(){return {put(){throw new Error('bad put')}}}};
+ const db={transaction:()=>tx,close(){closed=true}};
+ const indexedDB={open(){const request={result:db};queueMicrotask(()=>request.onsuccess());return request}};
+ const storage=loadTypeScript('src/storage.ts',{}, {indexedDB});
+ await assert.rejects(storage.saveMeeting({id:'x',title:'X',department:'Chung',created_at:'2026-10-26T00:00:00Z'}),/bad put/);
+ assert.equal(aborted,true);
+ assert.equal(closed,true);
+});
