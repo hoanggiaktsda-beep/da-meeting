@@ -22,7 +22,7 @@ export async function startRecording(onStop:(blob:Blob)=>void,onError:(message:s
  const session=crypto.randomUUID();
  try{localStorage.setItem('da-meeting-last-audio-session',session)}catch(e){stream.getTracks().forEach(t=>t.stop());throw new Error('Không lưu được mã phiên ghi âm trên thiết bị; chưa bắt đầu ghi để tránh mất dữ liệu.',{cause:e})}
  let index=0;let pending=Promise.resolve();let failed=false;
- recorder.ondataavailable=e=>{if(!e.data.size)return;const chunk=e.data;const i=index++;pending=pending.then(()=>writeChunk(session,i,chunk)).catch(()=>{failed=true;onError('Không lưu được đoạn âm thanh. Kiểm tra dung lượng thiết bị và dừng ghi để bảo vệ dữ liệu.')})};
+ recorder.ondataavailable=e=>{if(!e.data.size)return;const chunk=e.data;const i=index++;pending=pending.then(()=>writeChunk(session,i,chunk)).catch(()=>{failed=true;onError('Không lưu được đoạn âm thanh. Đã dừng ghi để tránh tiếp tục mất dữ liệu; hãy khôi phục phần đã lưu.');if(recorder.state!=='inactive'){try{recorder.stop()}catch{/* recorder may already be stopping */}}})};
  recorder.onerror=()=>{onError('Ghi âm gặp lỗi. Hãy dừng ghi và kiểm tra các đoạn đã lưu.');stream.getTracks().forEach(t=>t.stop())};
  stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{onError('Microphone bị ngắt. Chỉ các đoạn đã lưu có thể khôi phục.');if(recorder.state!=='inactive')recorder.stop()}));
  recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());void pending.then(async()=>{const blob=await recoverRecording(session);if(blob.size)onStop(blob);else onError('Không có dữ liệu ghi âm đã lưu.');if(failed)onError('Một số đoạn ghi âm có thể đã mất.')}).catch(()=>onError('Không đọc được bản ghi đã lưu.'))};
