@@ -85,3 +85,31 @@ test('meeting transaction catches synchronous store failures and aborts',async()
  assert.equal(aborted,true);
  assert.equal(closed,true);
 });
+
+test('recording stops after IndexedDB chunk write fails',async()=>{
+ let stopCount=0;const errors=[];
+ const track={stop(){},addEventListener(){}};
+ const stream={getTracks:()=>[track],getAudioTracks:()=>[track]};
+ class Recorder{
+  static isTypeSupported(){return true}
+  constructor(){this.state='inactive'}
+  start(){this.state='recording'}
+  stop(){if(this.state==='inactive')return;this.state='inactive';stopCount++;this.onstop?.()}
+ }
+ const db={close(){},transaction(){
+  const tx={error:new Error('quota'),objectStore(){return {put(){queueMicrotask(()=>tx.onerror())}}}};
+  return tx;
+ }};
+ const indexedDB={open(){const request={result:db};queueMicrotask(()=>request.onsuccess());return request}};
+ const recording=loadTypeScript('src/recording.ts',{},{
+  navigator:{mediaDevices:{getUserMedia:async()=>stream}},
+  MediaRecorder:Recorder,indexedDB,Blob,Error,
+  crypto:{randomUUID:()=> 'failed-session'},
+  localStorage:{setItem(){}},
+ });
+ const recorder=await recording.startRecording(()=>{},message=>errors.push(message));
+ recorder.ondataavailable({data:new Blob(['sample'])});
+ await new Promise(resolve=>setTimeout(resolve,30));
+ assert.equal(stopCount,1);
+ assert.ok(errors.some(message=>message.includes('Đã dừng ghi')));
+});
