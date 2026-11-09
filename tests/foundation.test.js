@@ -6,3 +6,5 @@ test('long recording discloses limitations',()=>{const s=readFileSync('src/main.
 test('Meet capture requires permission and notes are not labeled AI transcript',()=>{const m=readFileSync('src/meet.ts','utf8');const ui=readFileSync('src/main.tsx','utf8');assert.match(m,/getDisplayMedia/);assert.match(m,/getAudioTracks/);assert.match(ui,/chưa phải AI tự nghe/);assert.match(ui,/validMeetLink/)});
 
 test('Meet notes persist and tab capture warns of memory limits',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/da-meet-notes/);assert.match(s,/không dùng để ghi 10 tiếng/);const m=readFileSync('src/meet.ts','utf8');assert.match(m,/recorder.onerror=finish/)});
+
+test('storage denial is guarded and recording stops on chunk write failure',()=>{const ui=readFileSync('src/main.tsx','utf8');const rec=readFileSync('src/recording.ts','utf8');assert.match(ui,/function safeRead\(/);assert.match(ui,/function safeWrite\(/);assert.match(rec,/Không thể lưu mã phiên ghi âm/);assert.match(rec,/if\(recorder.state!=='inactive'\)recorder.stop\(\)/)});
