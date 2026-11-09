@@ -5,12 +5,14 @@ import './style.css';
 import {validMeetLink,supportsTabAudio,captureMeetTab,summarizeNotes} from './meet';
 import {startRecording,downloadRecording,recoverRecording,supported,MAX_RECORDING_MS,formatDuration,storageEstimate,requestPersistentStorage,downloadSavedChunks} from './recording';
 
+function safeRead(key:string){try{return localStorage.getItem(key)||''}catch{return ''}}
+function safeWrite(key:string,value:string){try{localStorage.setItem(key,value)}catch{return false}return true}
 const departments=['Chung','Bán hàng','Sản xuất','Marketing','Thiết kế','Vận hành','Tài chính'];
 function App(){
- const [meetLink,setMeetLink]=React.useState(()=>localStorage.getItem('da-meet-link')||'');
- const [liveNotes,setLiveNotes]=React.useState(()=>localStorage.getItem('da-meet-notes')||'');
- React.useEffect(()=>{localStorage.setItem('da-meet-link',meetLink)},[meetLink]);
- React.useEffect(()=>{localStorage.setItem('da-meet-notes',liveNotes)},[liveNotes]);
+ const [meetLink,setMeetLink]=React.useState(()=>safeRead('da-meet-link'));
+ const [liveNotes,setLiveNotes]=React.useState(()=>safeRead('da-meet-notes'));
+ React.useEffect(()=>{safeWrite('da-meet-link',meetLink)},[meetLink]);
+ React.useEffect(()=>{safeWrite('da-meet-notes',liveNotes)},[liveNotes]);
  const [tabCapture,setTabCapture]=React.useState<{stop:()=>void}|null>(null);
  const [meetAudio,setMeetAudio]=React.useState<Blob[]>([]);
  const [meetError,setMeetError]=React.useState('');
@@ -30,10 +32,10 @@ function App(){
  const [capacity,setCapacity]=React.useState('');
  React.useEffect(()=>{if(startedAt===null)return;const timer=setInterval(()=>{const delta=Date.now()-startedAt;setElapsed(delta);if(delta>=MAX_RECORDING_MS){if(recorder&&recorder.state!=='inactive')recorder.stop();setRecorder(null);setStartedAt(null)}},1000);return()=>clearInterval(timer)},[startedAt,recorder]);
  async function checkCapacity(){const e=await storageEstimate();const free=e.quota!==undefined&&e.usage!==undefined?e.quota-e.usage:undefined;setCapacity(free===undefined?'Dung lượng khả dụng: chưa xác định':'Dung lượng ước tính còn: '+Math.round(free/1048576)+' MB');if(free!==undefined&&free<650*1048576)setRecordingError('Cảnh báo: dung lượng trống có thể không đủ cho 10 tiếng.')}
- async function exportParts(){const session=localStorage.getItem('da-meeting-last-audio-session');if(!session)return;try{const count=await downloadSavedChunks(session);setRecordingError('Đã yêu cầu tải '+count+' phần. Lưu ý: các đoạn MediaRecorder tách riêng có thể không phát độc lập; cần kiểm tra trên thiết bị. Trình duyệt có thể chặn tải nhiều tệp.')}catch{setRecordingError('Không xuất được các đoạn âm thanh.')}}
+ async function exportParts(){const session=safeRead('da-meeting-last-audio-session');if(!session)return;try{const count=await downloadSavedChunks(session);setRecordingError('Đã yêu cầu tải '+count+' phần. Lưu ý: các đoạn MediaRecorder tách riêng có thể không phát độc lập; cần kiểm tra trên thiết bị. Trình duyệt có thể chặn tải nhiều tệp.')}catch{setRecordingError('Không xuất được các đoạn âm thanh.')}}
  async function begin(){setRecordingError('');setAudio(null);try{await requestPersistentStorage();await checkCapacity();const r=await startRecording(setAudio,setRecordingError);setRecorder(r);setStartedAt(Date.now());setElapsed(0)}catch{setRecordingError('Không thể mở microphone. Hãy cấp quyền và thử lại.')}}
  function stop(){if(recorder&&recorder.state!=='inactive'){recorder.stop();setRecorder(null);setStartedAt(null)}}
- async function recover(){const session=localStorage.getItem('da-meeting-last-audio-session');if(!session){setRecordingError('Chưa có phiên ghi âm để khôi phục.');return}try{const blob=await recoverRecording(session);if(!blob.size)throw Error('empty');setAudio(blob);setRecordingError('Đã tìm thấy các đoạn được lưu. Hãy tải về ngay.')}catch{setRecordingError('Không tìm thấy đoạn âm thanh có thể khôi phục.')}}
+ async function recover(){const session=safeRead('da-meeting-last-audio-session');if(!session){setRecordingError('Chưa có phiên ghi âm để khôi phục.');return}try{const blob=await recoverRecording(session);if(!blob.size)throw Error('empty');setAudio(blob);setRecordingError('Đã tìm thấy các đoạn được lưu. Hãy tải về ngay.')}catch{setRecordingError('Không tìm thấy đoạn âm thanh có thể khôi phục.')}}
 
  async function refresh(){try{setMeetings(await listMeetings());setReady(true);setError('')}catch{setError('Không mở được kho lưu trữ trên trình duyệt. Kiểm tra chế độ riêng tư hoặc dung lượng.');setReady(false)}}
  React.useEffect(()=>{void refresh()},[]);
