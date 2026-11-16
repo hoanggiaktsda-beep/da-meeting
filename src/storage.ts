@@ -5,3 +5,15 @@ async function transact<T>(mode:IDBTransactionMode,action:(store:IDBObjectStore,
 export const listMeetings=()=>transact<Meeting[]>('readonly',(store,resolve,reject)=>{const req=store.getAll();req.onsuccess=()=>resolve((req.result as Meeting[]).sort((a,b)=>b.created_at.localeCompare(a.created_at)));req.onerror=()=>reject(req.error)});
 export const saveMeeting=(m:Meeting)=>transact<void>('readwrite',(store,resolve,reject)=>{const req=store.put(m);req.onsuccess=()=>resolve(undefined);req.onerror=()=>reject(req.error)});
 export const deleteMeeting=(id:string)=>transact<void>('readwrite',(store,resolve,reject)=>{const req=store.delete(id);req.onsuccess=()=>resolve(undefined);req.onerror=()=>reject(req.error)});
+
+export async function importMeetingsAtomic(meetings:Meeting[]):Promise<void>{
+ const db=await openDB();
+ try{await new Promise<void>((resolve,reject)=>{
+  let tx:IDBTransaction;
+  try{tx=db.transaction(STORE,'readwrite');for(const m of meetings)tx.objectStore(STORE).put(m)}
+  catch(e){try{tx!.abort()}catch{}reject(e);return}
+  tx.oncomplete=()=>resolve();
+  tx.onerror=()=>reject(tx.error||new Error('Import transaction failed'));
+  tx.onabort=()=>reject(tx.error||new Error('Import aborted'));
+ })}finally{db.close()}
+}
