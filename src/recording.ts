@@ -19,9 +19,11 @@ export async function startRecording(onStop:(blob:Blob)=>void,onError:(message:s
  const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
  let recorder:MediaRecorder;
  try{recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined)}catch(e){stream.getTracks().forEach(t=>t.stop());throw e}
- const session=crypto.randomUUID();localStorage.setItem('da-meeting-last-audio-session',session);
+ const session=crypto.randomUUID();
+ try{localStorage.setItem('da-meeting-last-audio-session',session)}catch{stream.getTracks().forEach(t=>t.stop());throw new Error('Không lưu được mã phiên ghi âm. Kiểm tra quyền lưu trữ trình duyệt.') }
  let index=0;let pending=Promise.resolve();let failed=false;
- recorder.ondataavailable=e=>{if(!e.data.size)return;const chunk=e.data;const i=index++;pending=pending.then(()=>writeChunk(session,i,chunk)).catch(()=>{failed=true;onError('Không lưu được đoạn âm thanh. Kiểm tra dung lượng thiết bị và dừng ghi để bảo vệ dữ liệu.')})};
+ const stopOnStorageFailure=()=>{if(failed)return;failed=true;onError('Không lưu được âm thanh vào IndexedDB. Đã dừng ghi để tránh mất thêm dữ liệu; hãy khôi phục các đoạn trước đó.');if(recorder.state!=='inactive')recorder.stop()};
+ recorder.ondataavailable=e=>{if(!e.data.size)return;const chunk=e.data;const i=index++;pending=pending.then(()=>writeChunk(session,i,chunk)).catch(stopOnStorageFailure)};
  recorder.onerror=()=>{onError('Ghi âm gặp lỗi. Hãy dừng ghi và kiểm tra các đoạn đã lưu.');stream.getTracks().forEach(t=>t.stop())};
  stream.getAudioTracks().forEach(track=>track.addEventListener('ended',()=>{onError('Microphone bị ngắt. Chỉ các đoạn đã lưu có thể khôi phục.');if(recorder.state!=='inactive')recorder.stop()}));
  recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());void pending.then(async()=>{const blob=await recoverRecording(session);if(blob.size)onStop(blob);else onError('Không có dữ liệu ghi âm đã lưu.');if(failed)onError('Một số đoạn ghi âm có thể đã mất.')}).catch(()=>onError('Không đọc được bản ghi đã lưu.'))};
