@@ -16,3 +16,5 @@ test('backup v04 includes Meet notes and imports atomically',()=>{
  assert.match(storage,/db.transaction\(STORE,'readwrite'\)/);
  assert.match(storage,/tx.onabort/);
 });
+
+test('recording halts on IndexedDB failure and releases tracks on session storage denial',()=>{const s=readFileSync('src/recording.ts','utf8');assert.match(s,/catch\{stream\.getTracks\(\)\.forEach\(t=>t\.stop\(\)\);throw new Error/);assert.match(s,/catch\(stopOnStorageFailure\)/);assert.match(s,/if\(recorder\.state!=='inactive'\)recorder\.stop\(\)/)});
