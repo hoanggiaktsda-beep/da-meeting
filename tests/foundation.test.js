@@ -6,3 +6,15 @@ test('long recording discloses limitations',()=>{const s=readFileSync('src/main.
 test('Meet capture requires permission and notes are not labeled AI transcript',()=>{const m=readFileSync('src/meet.ts','utf8');const ui=readFileSync('src/main.tsx','utf8');assert.match(m,/getDisplayMedia/);assert.match(m,/getAudioTracks/);assert.match(ui,/chưa phải AI tự nghe/);assert.match(ui,/validMeetLink/)});
 
 test('Meet notes persist and tab capture warns of memory limits',()=>{const s=readFileSync('src/main.tsx','utf8');assert.match(s,/da-meet-notes/);assert.match(s,/không dùng để ghi 10 tiếng/);const m=readFileSync('src/meet.ts','utf8');assert.match(m,/recorder.onerror=finish/)});
+
+test('backup v04 includes Meet notes and imports atomically',()=>{
+ const ui=readFileSync('src/main.tsx','utf8');const storage=readFileSync('src/storage.ts','utf8');
+ assert.match(ui,/format:'da-meeting-v04',meetings,meetLink,liveNotes/);
+ assert.match(ui,/importMeetingsAtomic\(parsed.meetings\)/);
+ assert.match(ui,/safeRead\('da-meet-link'\)/);
+ assert.match(storage,/export async function importMeetingsAtomic/);
+ assert.match(storage,/db.transaction\(STORE,'readwrite'\)/);
+ assert.match(storage,/tx.onabort/);
+});
+
+test('recording halts on IndexedDB failure and releases tracks on session storage denial',()=>{const s=readFileSync('src/recording.ts','utf8');assert.match(s,/catch\{stream\.getTracks\(\)\.forEach\(t=>t\.stop\(\)\);throw new Error/);assert.match(s,/catch\(stopOnStorageFailure\)/);assert.match(s,/if\(recorder\.state!=='inactive'\)recorder\.stop\(\)/)});
